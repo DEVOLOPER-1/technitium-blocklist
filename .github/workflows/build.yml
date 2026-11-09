@@ -52,6 +52,26 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bash scripts/publish.sh dist
 
+      # Closes the loop on the channel the resolvers actually use: fetch the public
+      # release assets back over HTTP and re-run the same invariant test on them.
+      # Catches a broken redirect, a stale asset, or a corrupted upload.
+      - name: Verify published artifacts (delivery path)
+        run: |
+          set -eu
+          mkdir -p published
+          base="https://github.com/${GITHUB_REPOSITORY}/releases/download/blocklist"
+          for f in build-report.json technitium-blocklist.txt \
+                   technitium-blocklist-compact.txt technitium-blocklist-adblock.txt; do
+            ok=0
+            for attempt in 1 2 3 4 5; do
+              if curl -fsSL --max-time 600 -o "published/$f" "$base/$f"; then ok=1; break; fi
+              echo "retry $attempt for $f (asset may still be propagating)"
+              sleep 10
+            done
+            [ "$ok" = 1 ] || { echo "ERROR: could not download $f from the release"; exit 1; }
+          done
+          python3 tests/test_output.py published
+
       - name: Job summary
         if: always()
         run: python3 scripts/summary.py dist/build-report.json >> "$GITHUB_STEP_SUMMARY"
