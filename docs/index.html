@@ -78,15 +78,21 @@
     <h2>Published list (use this URL in Technitium)</h2>
     <div class="body">
       <div class="row">
+        <span class="pill" style="min-width:64px;text-align:center">full</span>
         <input id="rawUrl" class="grow mono" readonly>
         <button id="btnCopy">Copy</button>
         <a id="lnkRaw" target="_blank" rel="noopener">open</a>
       </div>
+      <div class="row" style="margin-top:8px">
+        <span class="pill" style="min-width:64px;text-align:center">compact</span>
+        <input id="rawUrlCompact" class="grow mono" readonly>
+        <button id="btnCopyCompact">Copy</button>
+        <a id="lnkCompact" target="_blank" rel="noopener">open</a>
+      </div>
       <div class="hint" style="margin-top:10px">
-        Settings → Blocking → Block List URLs → add the URL above.
-        Technitium re-downloads it every 24 h and skips <code>#</code> comment lines.
-        A second, smaller file (<code id="compactName">…</code>) omits subdomains already
-        covered by a blocked parent — same blocking result, fewer entries.
+        The <b>second</b> URL is recommended for Technitium: same blocking result, ~35 %
+        fewer entries. Settings → Blocking → Block List URLs → add one of them.
+        Technitium re-downloads every 24 h and skips <code>#</code> comment lines.
       </div>
     </div>
   </div>
@@ -345,11 +351,21 @@ function renderReport() {
   }
   html += `</tbody></table>`;
   if (dead.length) {
-    html += `<div class="hint" style="margin-top:10px">Fully redundant (0 unique domains, safe to disable):
-             ${dead.map((d) => `<code>${d.name}</code>`).join(" ")}</div>`;
+    html += `<div class="hint" style="margin-top:10px">Fully redundant (0 unique domains):
+             ${dead.map((d) => `<code>${d.name}</code>`).join(" ")}
+             <br><button id="btnPrune" style="margin-top:8px">Disable ${dead.length} redundant source${dead.length > 1 ? "s" : ""}</button></div>`;
   }
   $("report").innerHTML = html;
   state.report = r;
+  const prune = document.getElementById("btnPrune");
+  if (prune) {
+    prune.onclick = () => {
+      const names = new Set(dead.map((d) => d.name));
+      state.model.sources.forEach((s) => { if (names.has(s.name)) s.enabled = false; });
+      render();
+      say(`disabled ${names.size} redundant sources — press Save to publish`, "ok");
+    };
+  }
   renderRows();
 }
 
@@ -379,7 +395,8 @@ function render() {
      · <a href="${RAW}/${FULL_PATH}" target="_blank" rel="noopener">raw list</a>`;
   $("rawUrl").value = `${RAW}/${FULL_PATH}`;
   $("lnkRaw").href = `${RAW}/${FULL_PATH}`;
-  $("compactName").textContent = state.model.output?.compact_filename || COMPACT_PATH;
+  $("rawUrlCompact").value = `${RAW}/${COMPACT_PATH}`;
+  $("lnkCompact").href = `${RAW}/${COMPACT_PATH}`;
   $("yaml").value = toYaml(state.model);
   renderRows();
   checkRoundTrip();
@@ -497,6 +514,11 @@ $("btnCopy").onclick = async () => {
   await navigator.clipboard.writeText($("rawUrl").value);
   $("btnCopy").textContent = "copied";
   setTimeout(() => ($("btnCopy").textContent = "Copy"), 1500);
+};
+$("btnCopyCompact").onclick = async () => {
+  await navigator.clipboard.writeText($("rawUrlCompact").value);
+  $("btnCopyCompact").textContent = "copied";
+  setTimeout(() => ($("btnCopyCompact").textContent = "Copy"), 1500);
 };
 $("btnAdd").onclick = () => {
   const name = $("newName").value.trim(), url = $("newUrl").value.trim();

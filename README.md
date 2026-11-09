@@ -1,7 +1,7 @@
 # technitium-blocklist
 
 One deduplicated, normalised DNS blocklist for **Technitium DNS Server**, rebuilt
-daily from ~35 upstream lists by GitHub Actions.
+daily from 34 enabled upstream lists by GitHub Actions.
 
 ```
 https://raw.githubusercontent.com/DEVOLOPER-1/technitium-blocklist/dist/technitium-blocklist.txt
@@ -22,6 +22,23 @@ Every list is downloaded, parsed, normalised and deduplicated into a single file
 Technitium gets one HTTP fetch instead of 35, one parse instead of 35, and one
 dictionary instead of 35 — the block-list zone is a flat `Dictionary<string,...>`
 plus a parent walk per query, so overlapping lists only cost memory and load time.
+
+## Findings from the first build
+
+Your 36 URLs went in and came out as one file of 4,628,759 domains from 6,273,319
+parsed entries — **1,644,560 duplicates (26 %) removed**. Three things worth knowing:
+
+* **Three sources were dead** and are now pointed at their current locations
+  (`tld`, `nrd14`, `GoodbyeAds-Spotify` renamed; blocklistproject `telemetry.txt` and
+  the urlhaus download endpoint retired upstream). Details in the table below.
+* **Three sources contribute nothing at all** once merged — `hagezi-fake`, `spam404`,
+  `phishing-army-extended` are 100 % covered by the others. The editor can disable them
+  in one click; the union does not change.
+* **`hagezi-ultimate` is 91 % redundant** here (263,990 parsed, 22,332 new) because the
+  individual hagezi lists are already enabled. Keeping it is fine — it is the cheapest
+  insurance against a sub-list being renamed again — but it is not free of overlap.
+* One upstream entry, `com.cn` in `cyberhost-malware`, was refused by the safety guard:
+  blocking a whole country's ccTLD is never the intent of a malware feed.
 
 ## How the pipeline works
 
@@ -54,19 +71,35 @@ silently shrunken list. Mark a source `optional: true` to accept its absence.
 
 ```
 # Technitium merged blocklist
-# full build: 2026-11-09T20:14:00Z
-# Sources: 35 enabled / 37 configured | 4123456 domains parsed
-# This file: 1234567 domains
+# full build: 2026-11-09T18:07:51Z
+# Sources: 34 enabled / 37 configured | 6273319 domains parsed
+# This file: 4628759 domains
 # Generated file - edit config/sources.yaml, not this list.
 # Format: one domain per line. Upstream lists keep their own licences.
-0-02.net
-0-24bp.com
+0--0--makepipelinespringpipeline0-3210zyxwvu.buildyourdata.com
+0--0-06-33362599-server.buildyourdata.com
 ...
 ```
 
 Technitium skips `#` and `!` lines and accepts a bare domain per line
 (`BlockListZoneManager.ReadListFile`), so this parses natively — no conversion needed
 on your side.
+
+### Size, and which file to use
+
+| file | domains | size | use |
+|---|---:|---:|---|
+| `technitium-blocklist-compact.txt` | ~2.9 M | ~54 MB | **recommended** for Technitium |
+| `technitium-blocklist.txt` | ~4.6 M | ~90 MB | full record / audit |
+
+Both block identically. The block-list zone is a `Dictionary<string,…>` in memory, so
+4.6 M entries costs roughly 1 GB of RAM and ~30 s of load time; 2.9 M costs ~35 % less.
+GitHub also hard-refuses any single file above 100 MB, so if the full list keeps growing
+the compact file is the one to keep publishing — switch it off with `output.compact: false`
+only if you need the 1:1 record.
+
+If even the compact file is too heavy, disable `blocklistproject-malware` in the editor:
+it alone contributes ~2.3 M unique domains.
 
 ## Editing the list
 
