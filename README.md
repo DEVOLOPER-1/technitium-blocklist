@@ -17,7 +17,7 @@ Pick the row for your resolver and paste that URL into its blocklist settings.
 | **Pi-hole v6** | `technitium-blocklist-adblock.txt` | ABP rules cover subdomains |
 | **AdGuard Home / AdGuard DNS** | `technitium-blocklist-adblock.txt` | ABP rules cover subdomains |
 | **uBlock Origin** | `technitium-blocklist-adblock.txt` | browser extension, ABP is native |
-| **Pi-hole v5** | `technitium-blocklist.txt` | v5 cannot read <code>\|\|domain^</code> |
+| **Pi-hole v5** | `technitium-blocklist.txt` | v5 cannot read <code>&#124;&#124;domain^</code> |
 | Anything exact-match only | `technitium-blocklist.txt` | 1:1 copy of what upstream lists say |
 
 Two channels carry identical bytes — use whichever is convenient:
@@ -46,7 +46,7 @@ interprets a rule, and that decides whether a parent entry also covers its subdo
 | Line in a list | Technitium | Pi-hole v6 | AdGuard Home | uBlock Origin |
 |---|---|---|---|---|
 | `ads.example.com` | blocks it **and all subdomains** | blocks that host only | blocks that host only | n/a |
-| <code>\|\|ads.example.com^</code> | blocks it and all subdomains | blocks it and all subdomains | blocks it and all subdomains | blocks it and all subdomains |
+| <code>&#124;&#124;ads.example.com^</code> | blocks it and all subdomains | blocks it and all subdomains | blocks it and all subdomains | blocks it and all subdomains |
 | <code>0.0.0.0 ads.example.com</code> | blocks it and all subdomains | blocks that host only | blocks that host only | n/a |
 
 Sources: [AdGuard DNS rule syntax](https://adguard-dns.io/kb/general/dns-filtering-syntax/)
@@ -62,7 +62,7 @@ That gives three files with three purposes:
   This is only equivalent on Technitium. On Pi-hole or AdGuard Home the same file would
   *lose* subdomain coverage, which is why it is not the recommended file there.
 * **`technitium-blocklist-adblock.txt`** is that same compact set written as
-  <code>\|\|domain^</code>. On ABP-aware engines one rule covers the whole subtree, so
+  <code>&#124;&#124;domain^</code>. On ABP-aware engines one rule covers the whole subtree, so
   the file has fewer entries than the full list and still blocks at least as much.
 * **`technitium-blocklist.txt`** is the honest 1:1 record: every unique domain exactly as
   upstream wrote it, with no assumption about parent matching. Use it for exact-match
@@ -74,7 +74,7 @@ Sizes at the time of writing (they drift daily):
 |---|---|---:|---:|
 | `technitium-blocklist.txt` | one domain per line | 4.63 M | 90 MB |
 | `technitium-blocklist-compact.txt` | one domain per line, a parent covers its children | 2.91 M | 54 MB |
-| `technitium-blocklist-adblock.txt` | <code>\|\|domain^</code> | 2.91 M | 63 MB |
+| `technitium-blocklist-adblock.txt` | <code>&#124;&#124;domain^</code> | 2.91 M | 63 MB |
 
 Every file starts with a `#` comment header carrying the build time, source count and
 entry count. Technitium, Pi-hole and AdGuard Home all treat `#` lines as comments.
