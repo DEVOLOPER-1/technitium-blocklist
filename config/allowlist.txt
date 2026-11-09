@@ -1,0 +1,11 @@
+# Allowlist — domains that must never be blocked.
+#
+# One domain per line. Subdomains are removed too (Technitium matches a blocked
+# domain against its parents), so `example.com` also unblocks `cdn.example.com`.
+#
+# Typical use: a site you need blocked nothing on it — bank, employer SSO,
+# package mirror, a game launcher patcher. Add the narrowest name that fixes it.
+#
+# Examples (inactive):
+#   mybank.example
+#   login.employer.example

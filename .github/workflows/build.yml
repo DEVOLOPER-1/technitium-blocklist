@@ -1,0 +1,57 @@
+name: build-blocklist
+
+on:
+  schedule:
+    # daily 03:17 UTC (deliberately off the hour to avoid the Actions stampede)
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "config/**"
+      - "scripts/**"
+      - "tests/**"
+      - ".github/workflows/build.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: blocklist-build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install --disable-pip-version-check pyyaml==6.0.2
+
+      - name: Unit tests (parser)
+        run: python3 tests/test_parser.py
+
+      - name: Build merged list
+        run: |
+          python3 scripts/build_blocklist.py \
+            --config config/sources.yaml \
+            --allowlist config/allowlist.txt \
+            --outdir dist
+
+      - name: Verify output invariants
+        run: python3 tests/test_output.py dist
+
+      - name: Publish to dist branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash scripts/publish.sh dist
+
+      - name: Job summary
+        if: always()
+        run: python3 scripts/summary.py dist/build-report.json >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,169 @@
+# Source catalogue for the merged Technitium blocklist.
+# Schema and per-source notes: see README.md.
+# The web editor (docs/index.html) rewrites this file; hand edits are fine too.
+
+version: 1
+
+output:
+  filename: technitium-blocklist.txt
+  compact_filename: technitium-blocklist-compact.txt
+  title: Technitium merged blocklist
+  sort: true
+  compact: true
+  safety_guard: true
+
+sources:
+  - name: hagezi-pro-plus
+    url: https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/pro.plus-onlydomains.txt
+    category: ads
+    enabled: true
+  - name: hagezi-popupads
+    url: https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/popupads-onlydomains.txt
+    category: ads
+    enabled: true
+  - name: hagezi-tif
+    url: https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/tif-onlydomains.txt
+    category: security
+    enabled: true
+  - name: hagezi-nrd7
+    url: https://cdn.jsdelivr.net/gh/hagezi/nrd@latest/domains/nrd7.txt
+    category: security
+    enabled: false
+    note: Newly-registered domains, last 7 days (~2.9M). Use at your own risk; triples list size.
+  - name: hagezi-nrd14-8
+    url: https://cdn.jsdelivr.net/gh/hagezi/nrd@latest/domains/nrd14-8.txt
+    category: security
+    enabled: false
+    note: Companion band to nrd7; together they replace the retired nrd14 list.
+  - name: hagezi-spam-tlds
+    url: https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/spam-tlds-onlydomains.txt
+    category: security
+    enabled: true
+  - name: hagezi-dyndns
+    url: https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/dyndns-onlydomains.txt
+    category: security
+    enabled: true
+  - name: onehosts-lite
+    url: https://raw.githubusercontent.com/badmojr/1Hosts/master/Lite/domains.txt
+    category: ads
+    enabled: true
+  - name: shadowwhisperer-malware
+    url: https://raw.githubusercontent.com/ShadowWhisperer/BlockLists/master/Lists/Malware
+    category: malware
+    enabled: true
+  - name: phishing-army
+    url: https://phishing.army/download/phishing_army_blocklist.txt
+    category: phishing
+    enabled: true
+  - name: firebog-easylist
+    url: https://v.firebog.net/hosts/Easylist.txt
+    category: ads
+    enabled: true
+  - name: firebog-easyprivacy
+    url: https://v.firebog.net/hosts/Easyprivacy.txt
+    category: tracking
+    enabled: true
+  - name: smarttv
+    url: https://raw.githubusercontent.com/Perflyst/PiHoleBlocklist/master/SmartTV.txt
+    category: tracking
+    enabled: true
+  - name: stevenblack-fakenews-gambling
+    url: https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-gambling/hosts
+    category: misc
+    enabled: true
+  - name: goodbyeads-spotify
+    url: https://raw.githubusercontent.com/jerryn70/GoodbyeAds/master/Extension/GoodbyeAds-Spotify-AdBlock.txt
+    category: ads
+    enabled: true
+  - name: blocklistproject-tracking
+    url: https://raw.githubusercontent.com/blocklistproject/Lists/master/tracking.txt
+    category: tracking
+    enabled: true
+  - name: blocklistproject-telemetry
+    url: https://raw.githubusercontent.com/blocklistproject/Lists/master/telemetry.txt
+    category: telemetry
+    enabled: false
+    optional: true
+    note: Retired upstream (404). Kept as a placeholder; hagezi ultimate covers native OS telemetry.
+  - name: blocklistproject-malware
+    url: https://raw.githubusercontent.com/blocklistproject/Lists/master/malware.txt
+    category: malware
+    enabled: true
+  - name: hagezi-ultimate
+    url: https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/ultimate-onlydomains.txt
+    category: ads
+    enabled: true
+    note: Superset of most other hagezi lists; expect high redundancy with them.
+  - name: hagezi-fake
+    url: https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/fake-onlydomains.txt
+    category: security
+    enabled: true
+  - name: hagezi-hoster
+    url: https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/hoster-onlydomains.txt
+    category: ads
+    enabled: true
+  - name: hagezi-urlshortener
+    url: https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/urlshortener-onlydomains.txt
+    category: tracking
+    enabled: true
+  - name: hagezi-doh-vpn-proxy-bypass
+    url: https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/doh-vpn-proxy-bypass-onlydomains.txt
+    category: security
+    enabled: true
+  - name: adguard-dns
+    url: https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt
+    category: ads
+    enabled: true
+  - name: firebog-adguarddns
+    url: https://v.firebog.net/hosts/AdguardDNS.txt
+    category: ads
+    enabled: true
+  - name: firebog-admiral
+    url: https://v.firebog.net/hosts/Admiral.txt
+    category: ads
+    enabled: true
+  - name: firebog-prigent-ads
+    url: https://v.firebog.net/hosts/Prigent-Ads.txt
+    category: ads
+    enabled: true
+  - name: firebog-prigent-crypto
+    url: https://v.firebog.net/hosts/Prigent-Crypto.txt
+    category: malware
+    enabled: true
+  - name: kadhosts
+    url: https://raw.githubusercontent.com/PolishFiltersTeam/KADhosts/master/KADhosts.txt
+    category: ads
+    enabled: true
+  - name: dandelionsprout-antimalware
+    url: https://raw.githubusercontent.com/DandelionSprout/adfilt/master/Alternate%20versions%20Anti-Malware%20List/AntiMalwareHosts.txt
+    category: malware
+    enabled: true
+  - name: anudeepnd-adservers
+    url: https://raw.githubusercontent.com/anudeepND/blacklist/master/adservers.txt
+    category: ads
+    enabled: true
+  - name: spam404
+    url: https://raw.githubusercontent.com/Spam404/lists/master/main-blacklist.txt
+    category: spam
+    enabled: true
+  - name: frogeye-firstparty-trackers
+    url: https://hostfiles.frogeye.fr/firstparty-trackers-hosts.txt
+    category: tracking
+    enabled: true
+  - name: urlhaus
+    url: https://malware-filter.gitlab.io/malware-filter/urlhaus-filter-hosts.txt
+    category: malware
+    enabled: true
+    note: Mirror of the urlhaus feed; abuse.ch removed its public downloads (410 Gone).
+  - name: phishing-army-extended
+    url: https://phishing.army/download/phishing_army_blocklist_extended.txt
+    category: phishing
+    enabled: true
+  - name: cyberhost-malware
+    url: https://lists.cyberhost.uk/malware.txt
+    category: malware
+    enabled: true
+  - name: pgl-yoyo
+    url: https://pgl.yoyo.org/adservers/serverlist.php?hostformat=hosts&showintro=0&mimetype=plaintext
+    category: ads
+    enabled: true

@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Technitium blocklist — source editor</title>
+<style>
+  :root{
+    --bg:#0f1216; --panel:#161b22; --panel-2:#1c232c; --line:#2a323d;
+    --fg:#e6edf3; --dim:#93a1b1; --accent:#4c9aff; --ok:#3fb950; --warn:#d29922; --bad:#f85149;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:14px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  header{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;
+         align-items:center;gap:16px;flex-wrap:wrap;background:var(--panel)}
+  header h1{font-size:16px;margin:0;font-weight:600;letter-spacing:.2px}
+  header .sub{color:var(--dim);font-size:12px}
+  .wrap{padding:18px 22px;max-width:1240px;margin:0 auto}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;margin-bottom:16px}
+  .card > h2{margin:0;padding:12px 16px;font-size:13px;text-transform:uppercase;
+             letter-spacing:.08em;color:var(--dim);border-bottom:1px solid var(--line)}
+  .card > .body{padding:14px 16px}
+  button{background:var(--panel-2);color:var(--fg);border:1px solid var(--line);
+         border-radius:6px;padding:7px 13px;font:inherit;cursor:pointer}
+  button:hover{border-color:#3d4856}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#04101f;font-weight:600}
+  button.primary:hover{filter:brightness(1.1)}
+  button.danger{color:var(--bad)}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  input,select,textarea{background:var(--bg);color:var(--fg);border:1px solid var(--line);
+                        border-radius:6px;padding:6px 9px;font:inherit;width:100%}
+  input[type=checkbox]{width:auto;accent-color:var(--accent)}
+  textarea{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;min-height:150px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{color:var(--dim);font-weight:500;font-size:11.5px;text-transform:uppercase;letter-spacing:.06em}
+  tr.off td{opacity:.5}
+  td.num{text-align:right;font-variant-numeric:tabular-nums}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .grow{flex:1;min-width:180px}
+  .pill{display:inline-block;padding:1px 7px;border-radius:99px;font-size:11px;
+        border:1px solid var(--line);color:var(--dim)}
+  .pill.ok{color:var(--ok);border-color:#24402c}
+  .pill.warn{color:var(--warn);border-color:#4a3a12}
+  .pill.bad{color:var(--bad);border-color:#4d2320}
+  .status{padding:9px 16px;font-size:12.5px;color:var(--dim);border-top:1px solid var(--line);
+          display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  .status b{color:var(--fg);font-weight:600}
+  .hint{color:var(--dim);font-size:12px}
+  .err{color:var(--bad)}
+  details summary{cursor:pointer;color:var(--dim);font-size:12.5px;padding:4px 0}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;
+       background:var(--panel-2);padding:2px 6px;border-radius:4px;border:1px solid var(--line)}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:820px){.grid2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Technitium blocklist — source editor</h1>
+    <div class="sub" id="repoLine">loading…</div>
+  </div>
+  <div style="margin-left:auto" class="row">
+    <button id="btnReload">Reload</button>
+    <button id="btnBuild">Run build now</button>
+    <button id="btnSave" class="primary">Save to GitHub</button>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="card">
+    <h2>Published list (use this URL in Technitium)</h2>
+    <div class="body">
+      <div class="row">
+        <input id="rawUrl" class="grow mono" readonly>
+        <button id="btnCopy">Copy</button>
+        <a id="lnkRaw" target="_blank" rel="noopener">open</a>
+      </div>
+      <div class="hint" style="margin-top:10px">
+        Settings → Blocking → Block List URLs → add the URL above.
+        Technitium re-downloads it every 24 h and skips <code>#</code> comment lines.
+        A second, smaller file (<code id="compactName">…</code>) omits subdomains already
+        covered by a blocked parent — same blocking result, fewer entries.
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Sources <span id="srcCount" class="pill"></span></h2>
+    <div class="body" style="padding-bottom:6px">
+      <div class="row" style="margin-bottom:12px">
+        <input id="filter" class="grow" placeholder="Filter by name, url or category…">
+        <select id="catFilter" style="width:auto;min-width:150px"><option value="">all categories</option></select>
+        <button id="btnShowRedundant">Show redundant only</button>
+      </div>
+      <table>
+        <thead><tr>
+          <th style="width:44px">on</th>
+          <th style="width:190px">name</th>
+          <th style="width:110px">category</th>
+          <th>url</th>
+          <th class="num" style="width:90px">parsed</th>
+          <th class="num" style="width:96px">redundant</th>
+          <th style="width:40px"></th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div class="row" style="margin-top:14px;border-top:1px solid var(--line);padding-top:14px">
+        <input id="newName" placeholder="new-source-name" style="width:200px">
+        <input id="newUrl" class="grow" placeholder="https://example.com/hosts.txt">
+        <input id="newCat" placeholder="category" style="width:130px">
+        <button id="btnAdd">Add</button>
+      </div>
+    </div>
+    <div class="status" id="status"></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>Allowlist (never block)</h2>
+      <div class="body">
+        <div class="hint" style="margin-bottom:8px">
+          One domain per line. Children are removed too, matching Technitium's
+          parent-matching rule. Use this to fix false positives without editing the merge.
+        </div>
+        <textarea id="allowlist" spellcheck="false" placeholder="example.com"></textarea>
+        <div class="row" style="margin-top:10px">
+          <button id="btnSaveAllow">Save allowlist</button>
+          <span class="hint" id="allowState"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Build report</h2>
+      <div class="body" id="report"><div class="hint">no report yet — run a build</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>GitHub token</h2>
+    <div class="body">
+      <div class="row">
+        <input id="token" type="password" class="grow" placeholder="github_pat_… (fine-grained, this repo only)">
+        <button id="btnToken">Save token</button>
+        <button id="btnForget" class="danger">Forget</button>
+      </div>
+      <div class="hint" style="margin-top:10px">
+        Needed only for <b>Save</b> and <b>Run build</b>. Fine-grained token with
+        <code>Contents: Read and write</code> + <code>Actions: Read and write</code> on this
+        repository. Stored in this browser's localStorage, never sent anywhere but api.github.com.
+      </div>
+    </div>
+  </div>
+
+  <details class="card" style="padding:12px 16px">
+    <summary>Raw YAML (advanced)</summary>
+    <div class="body" style="padding:12px 0 0">
+      <textarea id="yaml" spellcheck="false" style="min-height:320px"></textarea>
+      <div class="row" style="margin-top:10px">
+        <button id="btnApplyYaml">Load from text</button>
+        <button id="btnGenYaml">Regenerate from table</button>
+        <button id="btnDownload">Download YAML</button>
+        <span class="hint" id="yamlState"></span>
+      </div>
+    </div>
+  </details>
+
+</div>
+
+<script>
+"use strict";
+const OWNER = "DEVOLOPER-1";
+const REPO  = "technitium-blocklist";
+const BRANCH = "main";
+const WORKFLOW = "build.yml";
+
+const RAW = `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}`;
+const YAML_PATH = "config/sources.yaml";
+const ALLOW_PATH = "config/allowlist.txt";
+const FULL_PATH = "technitium-blocklist.txt";
+const COMPACT_PATH = "technitium-blocklist-compact.txt";
+const REPORT_PATH = "build-report.json";
+const API = `https://api.github.com/repos/${OWNER}/${REPO}`;
+
+const $ = (id) => document.getElementById(id);
+const state = { model: null, sha: {}, report: null, token: localStorage.getItem("gh_pat") || "" };
+
+/* ---------------- tiny YAML reader/writer for this one schema ------------- */
+function unquote(v) {
+  v = v.trim();
+  if (v.length >= 2 && ((v[0] === '"' && v.at(-1) === '"') || (v[0] === "'" && v.at(-1) === "'"))) {
+    const inner = v.slice(1, -1);
+    return v[0] === '"' ? inner.replace(/\\"/g, '"').replace(/\\\\/g, "\\") : inner.replace(/''/g, "'");
+  }
+  return v;
+}
+function coerce(v) {
+  const s = unquote(v);
+  if (s === "true") return true;
+  if (s === "false") return false;
+  if (/^-?\d+$/.test(s)) return Number(s);
+  return s;
+}
+function parseYaml(text) {
+  const model = { version: 1, output: {}, sources: [] };
+  let section = null, cur = null;
+  for (const raw of text.split(/\r?\n/)) {
+    if (!raw.trim() || /^\s*#/.test(raw)) continue;
+    const isItem = /^\s*-\s+/.test(raw);
+    const m = /^\s*(?:-\s+)?([A-Za-z_][\w-]*)\s*:\s*(.*)$/.exec(raw);
+    if (!m) continue;
+    const key = m[1], val = m[2].trim();
+    if (isItem) { cur = {}; model.sources.push(cur); section = "sources"; cur[key] = coerce(val); continue; }
+    if (val === "") { section = key; cur = null; continue; }
+    if (section === "sources" && cur) { cur[key] = coerce(val); }
+    else if (section === "output") { model.output[key] = coerce(val); }
+    else if (key === "version") { model.version = coerce(val); }
+    else { model.output[key] = coerce(val); }
+  }
+  model.sources = model.sources.map((s) => ({
+    name: String(s.name || ""), url: String(s.url || ""),
+    category: String(s.category || "misc"),
+    enabled: s.enabled !== false,
+    optional: s.optional === true,
+    note: s.note ? String(s.note) : "",
+  }));
+  return model;
+}
+function q(v) {
+  if (typeof v === "boolean" || typeof v === "number") return String(v);
+  return '"' + String(v).replace(/\\/g, "\\\\").replace(/"/g, '\\"') + '"';
+}
+function toYaml(model) {
+  const out = [
+    "# Source catalogue for the merged Technitium blocklist.",
+    "# Generated by docs/index.html; schema documented in README.md.",
+    "",
+    `version: ${model.version || 1}`,
+    "",
+    "output:",
+  ];
+  const o = model.output || {};
+  for (const k of ["filename", "compact_filename", "title", "sort", "compact", "safety_guard"]) {
+    if (o[k] !== undefined) out.push(`  ${k}: ${q(o[k])}`);
+  }
+  out.push("", "sources:");
+  for (const s of model.sources) {
+    out.push(`  - name: ${q(s.name)}`);
+    out.push(`    url: ${q(s.url)}`);
+    out.push(`    category: ${q(s.category || "misc")}`);
+    out.push(`    enabled: ${s.enabled ? "true" : "false"}`);
+    if (s.optional) out.push("    optional: true");
+    if (s.note) out.push(`    note: ${q(s.note)}`);
+  }
+  return out.join("\n") + "\n";
+}
+
+/* --------------------------------- helpers -------------------------------- */
+const SLUG = /^[a-z0-9][a-z0-9-]{0,63}$/;
+function validate() {
+  const errs = [], names = new Set();
+  for (const s of state.model.sources) {
+    if (!SLUG.test(s.name)) errs.push(`bad name "${s.name}" (a-z, 0-9, -)`);
+    else if (names.has(s.name)) errs.push(`duplicate name "${s.name}"`);
+    names.add(s.name);
+    if (!/^https:\/\/[^\s]+$/.test(s.url)) errs.push(`bad url for "${s.name}"`);
+  }
+  if (!state.model.sources.some((s) => s.enabled)) errs.push("no enabled sources");
+  return errs;
+}
+function say(msg, cls) { $("status").innerHTML = cls ? `<span class="${cls}">${msg}</span>` : msg; }
+async function gh(path, opts = {}) {
+  const res = await fetch(`${API}${path}`, {
+    ...opts,
+    headers: {
+      Accept: "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+      Authorization: `Bearer ${state.token}`,
+      ...(opts.headers || {}),
+    },
+  });
+  const body = res.status === 204 ? {} : await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(`${res.status} ${body.message || res.statusText}`);
+  return body;
+}
+function b64encode(str) {
+  const bytes = new TextEncoder().encode(str);
+  let bin = "";
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin);
+}
+function b64decode(b64) {
+  const bin = atob(b64.replace(/\s/g, ""));
+  const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
+/* --------------------------------- loading -------------------------------- */
+async function loadRemote() {
+  const [yamlRes, allowRes] = await Promise.all([
+    fetch(`${RAW}/${YAML_PATH}?t=${Date.now()}`),
+    fetch(`${RAW}/${ALLOW_PATH}?t=${Date.now()}`),
+  ]);
+  if (!yamlRes.ok) throw new Error(`cannot read ${YAML_PATH} (${yamlRes.status})`);
+  state.model = parseYaml(await yamlRes.text());
+  $("allowlist").value = allowRes.ok ? (await allowRes.text()).trim() : "";
+  render();
+  loadReport();
+}
+
+async function loadReport() {
+  try {
+    const res = await fetch(`${RAW}/${REPORT_PATH}?t=${Date.now()}`);
+    if (!res.ok) return;
+    state.report = await res.json();
+    renderReport();
+  } catch { /* first run, no report yet */ }
+}
+
+function renderReport() {
+  const r = state.report;
+  if (!r) return;
+  const t = r.totals;
+  const top = r.sources.slice().sort((a, b) => b.new_unique - a.new_unique);
+  const dead = r.sources.filter((s) => s.new_unique === 0);
+  let html = `<div class="row" style="margin-bottom:10px">
+      <span class="pill ok">${t.unique.toLocaleString()} domains</span>
+      <span class="pill">${t.domains_parsed.toLocaleString()} parsed</span>
+      <span class="pill">${t.exact_duplicates.toLocaleString()} duplicates</span>
+      <span class="pill">${t.compact.toLocaleString()} compact</span>
+    </div>
+    <div class="hint" style="margin-bottom:8px">built ${r.generated_at} · sha ${r.content_sha256.slice(0, 12)}</div>
+    <table><thead><tr><th>source</th><th class="num">parsed</th><th class="num">unique</th><th class="num">red.</th></tr></thead><tbody>`;
+  for (const s of top.slice(0, 12)) {
+    const pct = Math.round((100 * s.duplicates) / Math.max(s.domains_parsed, 1));
+    html += `<tr><td>${s.name}</td><td class="num">${s.domains_parsed.toLocaleString()}</td>
+             <td class="num">${s.new_unique.toLocaleString()}</td><td class="num">${pct}%</td></tr>`;
+  }
+  html += `</tbody></table>`;
+  if (dead.length) {
+    html += `<div class="hint" style="margin-top:10px">Fully redundant (0 unique domains, safe to disable):
+             ${dead.map((d) => `<code>${d.name}</code>`).join(" ")}</div>`;
+  }
+  $("report").innerHTML = html;
+  state.report = r;
+  renderRows();
+}
+
+/* --------------------------------- render --------------------------------- */
+function filtered() {
+  const q = $("filter").value.toLowerCase().trim();
+  const cat = $("catFilter").value;
+  const onlyRedundant = $("btnShowRedundant").dataset.on === "1";
+  const redundant = new Set((state.report?.sources || []).filter((s) => s.new_unique === 0).map((s) => s.name));
+  return state.model.sources.filter((s) => {
+    if (cat && s.category !== cat) return false;
+    if (onlyRedundant && !redundant.has(s.name)) return false;
+    if (!q) return true;
+    return (s.name + " " + s.url + " " + s.category).toLowerCase().includes(q);
+  });
+}
+
+function render() {
+  const cats = [...new Set(state.model.sources.map((s) => s.category))].sort();
+  const sel = $("catFilter"), keep = sel.value;
+  sel.innerHTML = `<option value="">all categories</option>` +
+    cats.map((c) => `<option value="${c}"${c === keep ? " selected" : ""}>${c}</option>`).join("");
+  const on = state.model.sources.filter((s) => s.enabled).length;
+  $("srcCount").textContent = `${on} on / ${state.model.sources.length}`;
+  $("repoLine").innerHTML = `github.com/<a href="https://github.com/${OWNER}/${REPO}" target="_blank" rel="noopener">${OWNER}/${REPO}</a>
+     · <a href="https://github.com/${OWNER}/${REPO}/actions/workflows/${WORKFLOW}" target="_blank" rel="noopener">runs</a>
+     · <a href="${RAW}/${FULL_PATH}" target="_blank" rel="noopener">raw list</a>`;
+  $("rawUrl").value = `${RAW}/${FULL_PATH}`;
+  $("lnkRaw").href = `${RAW}/${FULL_PATH}`;
+  $("compactName").textContent = state.model.output?.compact_filename || COMPACT_PATH;
+  $("yaml").value = toYaml(state.model);
+  renderRows();
+  checkRoundTrip();
+}
+
+function renderRows() {
+  const stats = new Map((state.report?.sources || []).map((s) => [s.name, s]));
+  const tbody = $("rows");
+  tbody.innerHTML = "";
+  for (const s of filtered()) {
+    const st = stats.get(s.name);
+    const pct = st ? Math.round((100 * st.duplicates) / Math.max(st.domains_parsed, 1)) : null;
+    const tr = document.createElement("tr");
+    if (!s.enabled) tr.className = "off";
+    tr.innerHTML = `
+      <td><input type="checkbox" ${s.enabled ? "checked" : ""} data-k="enabled"></td>
+      <td><input value="${s.name}" data-k="name" class="mono" ${st ? "" : ""}></td>
+      <td><input value="${s.category}" data-k="category"></td>
+      <td><input value="${s.url}" data-k="url" class="mono"></td>
+      <td class="num">${st ? st.domains_parsed.toLocaleString() : "—"}</td>
+      <td class="num">${pct === null ? "—" : `<span class="pill ${pct >= 99 ? "bad" : pct > 60 ? "warn" : "ok"}">${pct}%</span>`}</td>
+      <td><button class="danger" data-del="1" title="remove">×</button></td>`;
+    tr.addEventListener("input", (ev) => {
+      const k = ev.target.dataset.k;
+      if (!k) return;
+      s[k] = ev.target.type === "checkbox" ? ev.target.checked : ev.target.value;
+      if (k === "enabled") tr.className = s.enabled ? "" : "off";
+      $("yaml").value = toYaml(state.model);
+      $("srcCount").textContent = `${state.model.sources.filter((x) => x.enabled).length} on / ${state.model.sources.length}`;
+      checkRoundTrip();
+    });
+    tr.querySelector("[data-del]").addEventListener("click", () => {
+      state.model.sources = state.model.sources.filter((x) => x !== s);
+      render();
+    });
+    tbody.appendChild(tr);
+  }
+}
+
+function checkRoundTrip() {
+  const again = parseYaml(toYaml(state.model));
+  const ok = JSON.stringify(again.sources) === JSON.stringify(state.model.sources);
+  $("yamlState").innerHTML = ok
+    ? `<span class="pill ok">yaml round-trip ok</span>`
+    : `<span class="pill bad">yaml round-trip mismatch</span>`;
+  return ok;
+}
+
+/* --------------------------------- actions -------------------------------- */
+async function saveFile(path, content, msg) {
+  const cur = await gh(`/contents/${encodeURI(path)}?ref=${BRANCH}`);
+  state.sha[path] = cur.sha;
+  await gh(`/contents/${encodeURI(path)}`, {
+    method: "PUT",
+    body: JSON.stringify({ message: msg, content: b64encode(content), sha: cur.sha, branch: BRANCH }),
+  });
+}
+
+async function save() {
+  if (!state.token) return say("add a GitHub token first", "err");
+  const errs = validate();
+  if (errs.length) return say("fix first: " + errs.join(" · "), "err");
+  if (!checkRoundTrip()) return say("refusing to save: YAML round-trip mismatch", "err");
+  say("saving…");
+  try {
+    await saveFile(YAML_PATH, toYaml(state.model), "config: update sources");
+    say(`saved ${state.model.sources.length} sources · the workflow rebuilds automatically`, "ok");
+    setTimeout(loadRemote, 2500);
+  } catch (e) { say("save failed: " + e.message, "err"); }
+}
+
+async function saveAllowlist() {
+  if (!state.token) return say("add a GitHub token first", "err");
+  try {
+    const text = $("allowlist").value.split(/\r?\n/).map((l) => l.trim()).filter(Boolean).join("\n") + "\n";
+    await saveFile(ALLOW_PATH, text, "config: update allowlist");
+    $("allowState").innerHTML = `<span class="pill ok">saved</span>`;
+  } catch (e) { $("allowState").innerHTML = `<span class="err">${e.message}</span>`; }
+}
+
+async function runBuild() {
+  if (!state.token) return say("add a GitHub token first", "err");
+  try {
+    await gh(`/actions/workflows/${WORKFLOW}/dispatches`,
+      { method: "POST", body: JSON.stringify({ ref: BRANCH }) });
+    say("build queued — refreshing status…");
+    poll();
+  } catch (e) { say("dispatch failed: " + e.message, "err"); }
+}
+
+let pollTimer = null;
+async function poll() {
+  clearTimeout(pollTimer);
+  try {
+    const runs = await gh(`/actions/workflows/${WORKFLOW}/runs?per_page=1&branch=${BRANCH}`);
+    const run = runs.workflow_runs?.[0];
+    if (!run) return say("no runs found");
+    const when = new Date(run.created_at).toLocaleTimeString();
+    if (run.status === "completed") {
+      say(`build ${run.conclusion} at ${when} · ` +
+          `<a href="${run.html_url}" target="_blank" rel="noopener">log</a>`, run.conclusion === "success" ? "ok" : "err");
+      if (run.conclusion === "success") setTimeout(loadReport, 4000);
+      return;
+    }
+    say(`build ${run.status} since ${when} · <a href="${run.html_url}" target="_blank" rel="noopener">log</a>`);
+    pollTimer = setTimeout(poll, 8000);
+  } catch (e) { say("status check failed: " + e.message, "err"); }
+}
+
+/* ---------------------------------- wiring -------------------------------- */
+$("btnSave").onclick = save;
+$("btnBuild").onclick = runBuild;
+$("btnReload").onclick = () => loadRemote().then(() => say("reloaded from GitHub", "ok")).catch((e) => say(e.message, "err"));
+$("btnCopy").onclick = async () => {
+  await navigator.clipboard.writeText($("rawUrl").value);
+  $("btnCopy").textContent = "copied";
+  setTimeout(() => ($("btnCopy").textContent = "Copy"), 1500);
+};
+$("btnAdd").onclick = () => {
+  const name = $("newName").value.trim(), url = $("newUrl").value.trim();
+  const cat = $("newCat").value.trim() || "misc";
+  if (!SLUG.test(name)) return say("name must be a-z, 0-9 and -", "err");
+  if (!/^https:\/\/\S+$/.test(url)) return say("url must start with https://", "err");
+  if (state.model.sources.some((s) => s.name === name)) return say("name already used", "err");
+  state.model.sources.push({ name, url, category: cat, enabled: true, optional: false, note: "" });
+  $("newName").value = $("newUrl").value = $("newCat").value = "";
+  render();
+  say(`added ${name} — press Save to publish`, "ok");
+};
+$("filter").oninput = renderRows;
+$("catFilter").onchange = renderRows;
+$("btnShowRedundant").onclick = (e) => {
+  const on = e.target.dataset.on === "1";
+  e.target.dataset.on = on ? "0" : "1";
+  e.target.classList.toggle("primary", !on);
+  renderRows();
+};
+$("btnSaveAllow").onclick = saveAllowlist;
+$("btnApplyYaml").onclick = () => {
+  try {
+    state.model = parseYaml($("yaml").value);
+    render();
+    say("loaded from text", "ok");
+  } catch (e) { say("parse failed: " + e.message, "err"); }
+};
+$("btnGenYaml").onclick = () => { $("yaml").value = toYaml(state.model); checkRoundTrip(); };
+$("btnDownload").onclick = () => {
+  const blob = new Blob([toYaml(state.model)], { type: "text/yaml" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "sources.yaml";
+  a.click();
+};
+$("token").value = state.token;
+$("btnToken").onclick = () => {
+  state.token = $("token").value.trim();
+  localStorage.setItem("gh_pat", state.token);
+  say(state.token ? "token saved locally" : "token cleared", state.token ? "ok" : "err");
+};
+$("btnForget").onclick = () => {
+  state.token = ""; localStorage.removeItem("gh_pat"); $("token").value = "";
+  say("token removed", "ok");
+};
+
+loadRemote()
+  .then(() => say("loaded from GitHub"))
+  .catch((e) => say("load failed: " + e.message, "err"));
+</script>
+</body>
+</html>

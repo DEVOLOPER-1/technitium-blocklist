@@ -1,0 +1,6 @@
+# generated artefacts (published on the `dist` branch instead)
+dist/
+.cache/
+__pycache__/
+*.pyc
+build.log
