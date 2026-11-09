@@ -89,10 +89,18 @@
         <button id="btnCopyCompact">Copy</button>
         <a id="lnkCompact" target="_blank" rel="noopener">open</a>
       </div>
+      <div class="row" style="margin-top:8px">
+        <span class="pill" style="min-width:64px;text-align:center">adblock</span>
+        <input id="rawUrlAdblock" class="grow mono" readonly>
+        <button id="btnCopyAdblock">Copy</button>
+        <a id="lnkAdblock" target="_blank" rel="noopener">open</a>
+      </div>
       <div class="hint" style="margin-top:10px">
-        The <b>second</b> URL is recommended for Technitium: same blocking result, ~35 %
-        fewer entries. Settings → Blocking → Block List URLs → add one of them.
-        Technitium re-downloads every 24 h and skips <code>#</code> comment lines.
+        <b>compact</b> is recommended for Technitium: same blocking, ~37 % fewer entries.
+        <b>adblock</b> (<code>||domain^</code>) is the one for Pi-hole v6, AdGuard Home and
+        uBlock Origin, which only cover subdomains with that syntax.
+        Settings → Blocking → Block List URLs → add one. Technitium re-downloads every
+        24 h and skips <code>#</code> comment lines.
       </div>
     </div>
   </div>
@@ -192,6 +200,7 @@ const YAML_PATH = "config/sources.yaml";
 const ALLOW_PATH = "config/allowlist.txt";
 const FULL_PATH = "technitium-blocklist.txt";
 const COMPACT_PATH = "technitium-blocklist-compact.txt";
+const ADBLOCK_PATH = "technitium-blocklist-adblock.txt";
 const REPORT_PATH = "build-report.json";
 const API = `https://api.github.com/repos/${OWNER}/${REPO}`;
 
@@ -397,6 +406,8 @@ function render() {
   $("lnkRaw").href = `${RAW}/${FULL_PATH}`;
   $("rawUrlCompact").value = `${RAW}/${COMPACT_PATH}`;
   $("lnkCompact").href = `${RAW}/${COMPACT_PATH}`;
+  $("rawUrlAdblock").value = `${RAW}/${ADBLOCK_PATH}`;
+  $("lnkAdblock").href = `${RAW}/${ADBLOCK_PATH}`;
   $("yaml").value = toYaml(state.model);
   renderRows();
   checkRoundTrip();
@@ -519,6 +530,11 @@ $("btnCopyCompact").onclick = async () => {
   await navigator.clipboard.writeText($("rawUrlCompact").value);
   $("btnCopyCompact").textContent = "copied";
   setTimeout(() => ($("btnCopyCompact").textContent = "Copy"), 1500);
+};
+$("btnCopyAdblock").onclick = async () => {
+  await navigator.clipboard.writeText($("rawUrlAdblock").value);
+  $("btnCopyAdblock").textContent = "copied";
+  setTimeout(() => ($("btnCopyAdblock").textContent = "Copy"), 1500);
 };
 $("btnAdd").onclick = () => {
   const name = $("newName").value.trim(), url = $("newUrl").value.trim();
