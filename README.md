@@ -96,12 +96,31 @@ on your side.
 
 Both block identically. The block-list zone is a `Dictionary<string,…>` in memory, so
 4.6 M entries costs roughly 1 GB of RAM and ~30 s of load time; 2.9 M costs ~35 % less.
-GitHub also hard-refuses any single file above 100 MB, so if the full list keeps growing
-the compact file is the one to keep publishing — switch it off with `output.compact: false`
-only if you need the 1:1 record.
 
 If even the compact file is too heavy, disable `blocklistproject-malware` in the editor:
 it alone contributes ~2.3 M unique domains.
+
+### Delivery channels, and why not Git LFS
+
+Every build is published twice, from the same bytes:
+
+| channel | URL | limit |
+|---|---|---|
+| `dist` branch | `raw.githubusercontent.com/.../dist/<file>` | 100 MiB per git blob |
+| Release assets | `github.com/.../releases/download/blocklist/<file>` | 2 GiB per asset, unmetered bandwidth |
+
+Today both fit, so use whichever URL you like. **Do not move these files to Git LFS**:
+Git LFS replaces the file in the repository with a ~130-byte pointer, so
+`raw.githubusercontent.com` would start serving that pointer instead of the list —
+Technitium would download it, parse zero domains, and silently wipe its block zone.
+LFS is also billed per push: every rebuild counts the whole file against storage again
+(GitHub Free includes 10 GiB, and if the quota is exceeded without a payment method LFS
+is disabled for the account). GitHub's own guidance for distributing large files is
+release assets, which are explicitly not size- or bandwidth-metered.
+
+GitHub's `HttpClient` in Technitium follows the redirect that release URLs return
+(`AllowAutoRedirect` is on by default), and on any download failure the server keeps
+the previously downloaded list, so a broken fetch never empties the block zone.
 
 ## Editing the list
 
