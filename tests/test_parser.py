@@ -86,6 +86,18 @@ def test_multiple_hosts_on_one_line():
     assert d == {"a.example.com", "b.example.com"} and stats["multi-token"] == 0, (d, stats)
 
 
+def test_ip_prefix_recovery():
+    d, _, stats = _d("0.0.0.0.creative.hpyrdr.com\n0.0.0.0 0.0.0.0.hpyrdr.com\n")
+    assert d == {"creative.hpyrdr.com", "hpyrdr.com"}, d
+    assert stats["stripped-ip-prefix"] == 2, stats
+
+
+def test_numeric_subdomain_not_stripped():
+    # a genuine numeric subdomain must survive untouched
+    d, _, stats = _d("1.2.3.4.legit.example.com\n")
+    assert d == {"1.2.3.4.legit.example.com"} and stats["stripped-ip-prefix"] == 0, (d, stats)
+
+
 if __name__ == "__main__":
     failures = 0
     tests = [(n, f) for n, f in sorted(globals().items()) if n.startswith("test_")]

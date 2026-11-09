@@ -113,6 +113,21 @@ def parents(domain: str):
         yield ".".join(parts[i:])
 
 
+def strip_ip_prefix(domain: str) -> str:
+    """Recover a domain from an upstream line like '0.0.0.0.ads.example.com'.
+
+    A few lists concatenate the hosts-file address with the name it should
+    rewrite. Only the null-route and loopback literals are stripped, so a real
+    numeric subdomain (1.2.3.4.example.com) is left alone.
+    """
+    labels = domain.split(".")
+    if len(labels) < 6:
+        return domain
+    if ".".join(labels[:4]) in ("0.0.0.0", "127.0.0.1"):
+        return ".".join(labels[4:])
+    return domain
+
+
 # --------------------------------------------------------------------------- #
 # parsing
 # --------------------------------------------------------------------------- #
@@ -156,6 +171,10 @@ def parse_list(text: str):
                 continue
             d, reason = normalize_domain(m.group(1))
             if d:
+                fixed = strip_ip_prefix(d)
+                if fixed != d:
+                    stats["stripped-ip-prefix"] += 1
+                    d = fixed
                 domains.append(d)
             else:
                 stats["invalid:" + reason] += 1
@@ -187,6 +206,10 @@ def parse_list(text: str):
                 continue
             d, reason = normalize_domain(cand)
             if d:
+                fixed = strip_ip_prefix(d)
+                if fixed != d:
+                    stats["stripped-ip-prefix"] += 1
+                    d = fixed
                 domains.append(d)
             else:
                 stats["invalid:" + reason] += 1
