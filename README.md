@@ -14,10 +14,10 @@ Pick the row for your resolver and paste that URL into its blocklist settings.
 | Resolver | File | Why |
 |---|---|---|
 | **Technitium** | `technitium-blocklist-compact.txt` | recommended: same blocking, ~37 % fewer entries |
-| **Pi-hole v6** | `technitium-blocklist-adblock.txt` | ABP rules cover subdomains |
+| **Pi-hole (FTL 5.22+)** | `technitium-blocklist-adblock.txt` | ABP rules cover subdomains |
 | **AdGuard Home / AdGuard DNS** | `technitium-blocklist-adblock.txt` | ABP rules cover subdomains |
 | **uBlock Origin** | `technitium-blocklist-adblock.txt` | browser extension, ABP is native |
-| **Pi-hole v5** | `technitium-blocklist.txt` | v5 cannot read <code>&#124;&#124;domain^</code> |
+| **Pi-hole before FTL 5.22** | `technitium-blocklist.txt` | no ABP parsing before March 2023 |
 | Anything exact-match only | `technitium-blocklist.txt` | 1:1 copy of what upstream lists say |
 
 Two channels carry identical bytes — use whichever is convenient:
@@ -43,7 +43,7 @@ interval. No script has to run on the DNS host; the URL is enough.
 All three files block the same set of names. What differs is how each DNS engine
 interprets a rule, and that decides whether a parent entry also covers its subdomains.
 
-| Line in a list | Technitium | Pi-hole v6 | AdGuard Home | uBlock Origin |
+| Line in a list | Technitium | Pi-hole 5.22+ | AdGuard Home | uBlock Origin |
 |---|---|---|---|---|
 | `ads.example.com` | blocks it **and all subdomains** | blocks that host only | blocks that host only | n/a |
 | <code>&#124;&#124;ads.example.com^</code> | blocks it and all subdomains | blocks it and all subdomains | blocks it and all subdomains | blocks it and all subdomains |
@@ -52,7 +52,7 @@ interprets a rule, and that decides whether a parent entry also covers its subdo
 Sources: [AdGuard DNS rule syntax](https://adguard-dns.io/kb/general/dns-filtering-syntax/)
 says of a bare domain rule: "blocks the `example.org` domain but not its subdomains";
 Pi-hole's [domain database documentation](https://docs.pi-hole.net/database/domain-database/)
-and the v6 ABP support work confirm the same split. Technitium differs because
+and the ABP parsing added in FTL 5.22 (March 2023) confirm the same split. Technitium differs because
 `BlockListZoneManager.IsZoneBlocked` walks `GetParentZone`, so a blocked parent covers
 every name beneath it.
 
