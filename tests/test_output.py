@@ -112,7 +112,7 @@ def main(outdir="dist", min_domains=50_000):
     abp_path = os.path.join(outdir, "technitium-blocklist-adblock.txt")
     abp_checked = 0
     if os.path.exists(abp_path):
-        abp_re = re.compile(r"^\|\|([a-z0-9_-]+(?:\.[a-z0-9_-]+)+)\^$")
+        abp_re = re.compile(r"^\|\|([a-z0-9_-]+(?:\.[a-z0-9_-]+)*)\^$")
         _, abp, _ = load(outdir, "technitium-blocklist-adblock.txt")
         bad = []
         for line in abp:

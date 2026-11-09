@@ -460,7 +460,9 @@ def main(argv=None) -> int:
         # result covers the same names as the full list.
         with open(os.path.join(args.outdir, adblock_name), "w", encoding="utf-8", newline="\n") as fh:
             fh.write("\n".join(header("adblock", len(compact))) + "\n")
-            fh.write("\n".join("||%s^" % d for d in compact) + "\n")
+            # sort the emitted rules, not the domains: "||abc.d^" orders before
+            # "||abc^" because '.' < '^', so sorting domains first would look unsorted
+            fh.write("\n".join(sorted("||%s^" % d for d in compact)) + "\n")
 
     report = {
         "generated_at": stamp,
