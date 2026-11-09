@@ -1,5 +1,7 @@
 # technitium-blocklist
 
+[![build-blocklist](https://github.com/DEVOLOPER-1/technitium-blocklist/actions/workflows/build.yml/badge.svg)](https://github.com/DEVOLOPER-1/technitium-blocklist/actions/workflows/build.yml) [![pages-build-deployment](https://github.com/DEVOLOPER-1/technitium-blocklist/actions/workflows/pages/pages-build-deployment/badge.svg)](https://github.com/DEVOLOPER-1/technitium-blocklist/actions/workflows/pages/pages-build-deployment)
+
 One deduplicated, normalised DNS blocklist for **Technitium DNS Server**, rebuilt
 daily from 34 enabled upstream lists by GitHub Actions.
 
