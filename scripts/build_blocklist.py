@@ -313,6 +313,7 @@ def main(argv=None) -> int:
     title = out_cfg.get("title") or "Technitium merged blocklist"
     full_name = out_cfg.get("filename") or "technitium-blocklist.txt"
     compact_name = out_cfg.get("compact_filename") or "technitium-blocklist-compact.txt"
+    adblock_name = out_cfg.get("adblock_filename") or ""
     do_sort = bool(out_cfg.get("sort", True))
     do_compact = bool(out_cfg.get("compact", True))
     safety_guard = bool(out_cfg.get("safety_guard", True))
@@ -434,8 +435,12 @@ def main(argv=None) -> int:
         if kind == "compact":
             lines.append("# Subdomains already covered by a blocked parent are omitted, which")
             lines.append("# Technitium treats identically (blocked zone match walks parents).")
+        if kind == "adblock":
+            lines.append("# Adblock/ABP syntax (||domain^). One rule blocks the domain and every")
+            lines.append("# subdomain, so parents cover children: use this with Pi-hole v6,")
+            lines.append("# AdGuard Home/DNS, uBlock Origin or Technitium.")
         lines.append("# Generated file - edit config/sources.yaml, not this list.")
-        lines.append("# Format: one domain per line. Upstream lists keep their own licences.")
+        lines.append("# Format: one entry per line. Upstream lists keep their own licences.")
         return lines
 
     body = "\n".join(full) + "\n"
@@ -447,6 +452,15 @@ def main(argv=None) -> int:
     if compact:
         with open(os.path.join(args.outdir, compact_name), "w", encoding="utf-8", newline="\n") as fh:
             fh.write("\n".join(header("compact", len(compact))) + "\n" + "\n".join(compact) + "\n")
+
+    adblock_written = bool(compact and adblock_name)
+    if adblock_written:
+        # ABP engines (Pi-hole v6, AdGuard Home/DNS, uBlock) match ||d^ against the
+        # domain and every subdomain, so the compacted set is the right input: the
+        # result covers the same names as the full list.
+        with open(os.path.join(args.outdir, adblock_name), "w", encoding="utf-8", newline="\n") as fh:
+            fh.write("\n".join(header("adblock", len(compact))) + "\n")
+            fh.write("\n".join("||%s^" % d for d in compact) + "\n")
 
     report = {
         "generated_at": stamp,
@@ -461,6 +475,7 @@ def main(argv=None) -> int:
             "safety_dropped": len(dropped_dangerous),
             "compact": len(compact),
             "compact_saved": total_unique - len(compact),
+            "adblock": len(compact) if adblock_written else 0,
         },
         "sources": sorted(parsed_per_source,
                           key=lambda p: p["new_unique"], reverse=True),
@@ -475,6 +490,8 @@ def main(argv=None) -> int:
         print("compact (parent-sub): %d  (-%d, -%.1f%%)"
               % (len(compact), total_unique - len(compact),
                  100.0 * (total_unique - len(compact)) / max(total_unique, 1)))
+        if adblock_written:
+            print("adblock (||d^)      : %d" % len(compact))
         print("allowlist removed   : %d" % allow_removed)
         print("safety drops        : %d" % len(dropped_dangerous))
         print("output              : %s/%s" % (args.outdir, full_name))

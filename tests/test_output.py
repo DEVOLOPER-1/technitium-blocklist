@@ -30,14 +30,14 @@ def load(outdir, filename):
     return header, body, path
 
 
-def main(outdir="dist"):
+def main(outdir="dist", min_domains=50_000):
     report = json.load(open(os.path.join(outdir, "build-report.json"), encoding="utf-8"))
     full_h, full, full_path = load(outdir, "technitium-blocklist.txt")
     problems = []
 
     # --- full list ---------------------------------------------------------
-    if len(full) < 50_000:
-        problems.append("full list suspiciously small: %d" % len(full))
+    if len(full) < min_domains:
+        problems.append("full list suspiciously small: %d (< %d)" % (len(full), min_domains))
     if len(full) != len(set(full)):
         dup = len(full) - len(set(full))
         problems.append("%d duplicate lines in full list" % dup)
@@ -108,6 +108,32 @@ def main(outdir="dist"):
         if not line.startswith("#"):
             problems.append("header line does not start with '#': %r" % line)
 
+    # --- adblock list -------------------------------------------------------
+    abp_path = os.path.join(outdir, "technitium-blocklist-adblock.txt")
+    abp_checked = 0
+    if os.path.exists(abp_path):
+        abp_re = re.compile(r"^\|\|([a-z0-9_-]+(?:\.[a-z0-9_-]+)+)\^$")
+        _, abp, _ = load(outdir, "technitium-blocklist-adblock.txt")
+        bad = []
+        for line in abp:
+            m = abp_re.match(line)
+            if not m:
+                bad.append(line)
+            else:
+                abp_checked += 1
+        if bad:
+            problems.append("%d adblock lines are not ||domain^ syntax, e.g. %r"
+                            % (len(bad), bad[:3]))
+        if len(abp) != len(set(abp)):
+            problems.append("adblock list has duplicates")
+        if abp != sorted(abp):
+            problems.append("adblock list is not sorted")
+        if os.path.exists(compact_path):
+            compact_domains = {"||%s^" % d for d in compact}
+            if set(abp) != compact_domains:
+                problems.append("adblock list does not match the compact domain set "
+                                "(abp=%d compact=%d)" % (len(abp), len(compact_domains)))
+
     if problems:
         print("FAILED")
         for p in problems:
@@ -122,4 +148,7 @@ def main(outdir="dist"):
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1] if len(sys.argv) > 1 else "dist"))
+    args = sys.argv[1:]
+    outdir = args[0] if args else "dist"
+    minimum = int(args[1]) if len(args) > 1 else 50_000
+    sys.exit(main(outdir, minimum))

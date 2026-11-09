@@ -55,5 +55,5 @@ fi
 gh release upload "$TAG" \
   --repo "$GITHUB_REPOSITORY" \
   --clobber \
-  technitium-blocklist.txt technitium-blocklist-compact.txt build-report.json
+  technitium-blocklist.txt technitium-blocklist-compact.txt technitium-blocklist-adblock.txt build-report.json
 echo "uploaded release assets ($new_hash)"
